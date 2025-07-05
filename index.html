@@ -337,59 +337,46 @@
 
 function setupReviewCheckboxes() {
   document.querySelectorAll('.mark-reviewed').forEach(box => {
-    box.addEventListener('change', async function () {
+    box.addEventListener('change', function () {
       if (this.checked) {
         const id = this.getAttribute('data-id');
-        const checkbox = this;
-        const recordDiv = checkbox.closest('.record');
+        const recordDiv = this.closest('.record');
         const header = recordDiv.querySelector('.header');
-        // Show loading state
-        checkbox.disabled = true;
-        header.style.opacity = 0.6;
-        header.innerHTML += ' <span class="loading-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top:2px solid #1c3f93;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-left:6px;"></span>';
-        // Spinner animation
-        if (!document.getElementById('spinner-style')) {
-          const style = document.createElement('style');
-          style.id = 'spinner-style';
-          style.innerHTML = '@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}';
-          document.head.appendChild(style);
-        }
-        try {
-          const apiUrl = `https://0r76uylef3.execute-api.us-east-2.amazonaws.com/default/XPO_final_Data_Update?field=Reviewed&value=true&record_id=${encodeURIComponent(id)}`;
-          const res = await fetch(apiUrl, { method: 'POST' });
-          const json = await res.json();
-          if (json.code === 3000) {
-            // Success: visually mark as reviewed, fade out, or move to reviewed tab
-            header.innerHTML = header.textContent.replace('✅ Updated', '') + ' ✅ Updated';
-            recordDiv.style.transition = 'opacity 0.5s';
-            recordDiv.style.opacity = 0.4;
-            setTimeout(() => {
-              // Optionally, remove or hide the record, or trigger a re-fetch
-              recordDiv.style.display = 'none';
-              // Optionally, trigger a re-fetch or move to reviewed tab for seamless UX
-            }, 800);
-          } else {
-            throw new Error(json.message || 'Unknown error');
-          }
-        } catch (err) {
-          // Failure: revert checkbox, show error
-          checkbox.checked = false;
-          checkbox.disabled = false;
-          header.style.opacity = 1;
-          header.innerHTML = header.textContent.replace('✅ Updated', '') + ' <span style="color:red;font-size:12px;">❌ Update failed</span>';
-          setTimeout(() => {
-            header.innerHTML = header.textContent.replace('❌ Update failed', '');
-          }, 2000);
-          console.warn("❌ Failed to update record:", err);
-        } finally {
-          // Remove spinner
-          const spinner = header.querySelector('.loading-spinner');
-          if (spinner) spinner.remove();
-        }
+
+        // Disable the checkbox & show a subtle loader
+        this.disabled = true;
+        const loadingText = document.createElement('span');
+        loadingText.textContent = ' Updating...';
+        loadingText.style.fontSize = '10px';
+        loadingText.style.color = '#555';
+        this.parentElement.appendChild(loadingText);
+
+        const url = `https://0r76uylef3.execute-api.us-east-2.amazonaws.com/default/XPO_final_Data_Update?field=Reviewed&value=true&record_id=${encodeURIComponent(id)}`;
+
+        fetch(url)
+          .then(res => res.json())
+          .then(json => {
+            if (json.code === 3000) {
+              recordDiv.style.opacity = 0.5;
+              header.textContent += ' ✅ Updated';
+            } else {
+              throw new Error('API returned unexpected response');
+            }
+          })
+          .catch(err => {
+            console.warn("❌ Failed to update record:", err);
+            alert('Update failed. Please try again.');
+            this.checked = false;
+          })
+          .finally(() => {
+            this.disabled = false;
+            loadingText.remove();
+          });
       }
     });
   });
 }
+
 
 function setupCollapseToggles() {
   // For state-level collapse
