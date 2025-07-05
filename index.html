@@ -354,24 +354,24 @@ function setupReviewCheckboxes() {
         const url = `https://0r76uylef3.execute-api.us-east-2.amazonaws.com/default/XPO_final_Data_Update?field=Reviewed&value=true&record_id=${encodeURIComponent(id)}`;
 
         fetch(url)
-          .then(res => res.json())
-          .then(json => {
-            if (json.code === 3000) {
-              recordDiv.style.opacity = 0.5;
-              header.textContent += ' ✅ Updated';
-            } else {
-              throw new Error('API returned unexpected response');
-            }
-          })
-          .catch(err => {
-            console.warn("❌ Failed to update record:", err);
-            alert('Update failed. Please try again.');
-            this.checked = false;
-          })
-          .finally(() => {
-            this.disabled = false;
-            loadingText.remove();
-          });
+  .then(res => res.json())
+  .then(json => {
+    if (json.code === 3000) {
+      recordDiv.style.opacity = 0.5;
+      header.textContent += ' ✅ Updated';
+    } else {
+      throw new Error('API returned unexpected response');
+    }
+  })
+  .catch(err => {
+    console.warn("❌ Failed to update record:", err);
+    alert('Update failed. Please try again.');
+    this.checked = false;
+  })
+  .finally(() => {
+    this.disabled = false;
+    loadingText.remove();
+  });
       }
     });
   });
