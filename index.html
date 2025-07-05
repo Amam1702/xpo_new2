@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Extracted XPO Invoice Data</title>
+  <script src="https://js.zohostatic.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f7fa; padding: 1px; }
+    h2 { margin-bottom: 20px; }
+    .filter-section { margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-section select,
+.filter-section input[type="text"],
+.filter-section input[type="date"] {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border 0.3s ease;
+
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border 0.3s ease;
+}
+    .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-buttons button {
+      padding: 5px 10px; border: none; background: #d6dff6; color: #1c3f93;
+      font-weight: bold; border-radius: 6px; cursor: pointer;
+    }
+    .tab-buttons button.active { background: #1c3f93; color: white; }
+    .tab-section { display: none; padding: 10px 20px; border-radius: 8px; width: calc(100% + 60px); margin-left: -30px; box-sizing: border-box; }
+.tab-section.active#unreviewed { background-color: #fff7e6; }
+.tab-section.active#reviewed { background-color: #e6f9ed; }
+.tab-section.active#manual { background-color: #fff0e6; }
+.tab-section.active#balance { background-color: #e6edff; }
+.tab-section.active#corrected { background-color: #f5e6ff; }
+    .tab-section.active { display: block; }
+    .record {
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+.city-label {
+  font-size: 10px;
+  font-weight: bold;
+  color: #444;
+  background: #f1f1f1;
+  padding: 6px 12px;
+  margin: 12px 0 6px;
+  border-left: 4px solid #888;
+  border-radius: 4px;
+}
+
+.record.unreviewed { border-left: 6px solid #e65100; background-color: #fff3e0; }
+  .header {
+  color: white;
+  padding: 10px 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.record.reviewed { border-left: 6px solid #1b5e20; background-color: #e8f5e9; }
+.record.manual { border-left: 6px solid #bf360c; background-color: #fbe9e7; }
+.record.balance { border-left: 6px solid #0d47a1; background-color: #e3f2fd; }
+.record.corrected { border-left: 6px solid #4a148c; background-color: #f3e5f5; }
+    .header {
+  color: white;
+  padding: 10px 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.record.unreviewed .header { background: #e65100; }
+.record.reviewed .header { background: #1b5e20; }
+.record.manual .header { background: #bf360c; }
+.record.balance .header { background: #0d47a1; }
+.record.corrected .header { background: #4a148c; }
+    .content { display: none; padding: 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th {
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  font-size: 10px; /* <-- Adjust to your preferred size */
+}
+    th { background-color: #f0f0f0; text-align: left; }
+    td.copyable { cursor: pointer; background-color: white; transition: background-color 0.3s ease; position: relative; }
+    td.copyable:hover { background-color: #eaf2ff; }
+    td.copied { background-color: #d4edda !important; }
+    .tooltip {
+      position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+      background-color: #28a745; color: white; padding: 3px 6px; border-radius: 3px;
+      font-size: 12px; display: none;
+    }
+
+    .shipper-section {
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  background: #f9f9f9;
+  overflow: hidden;
+}
+.shipper-header {
+  background: #e0e0e0;
+  padding: 8px 5px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 10px;
+}
+.shipper-content {
+  padding: 10px 20px;
+  transition: all 0.2s ease-in-out;
+}
+
+  </style>
+</head>
+<body>
+<h2>📋 Extracted XPO Invoice Data</h2>
+<div class="filter-section">
+  <label for="fieldSelect">Field:</label>
+  <select id="fieldSelect" style="min-width: 160px; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; font-size: 14px;"></select>
+  <input type="text" id="searchValue" style="min-width: 180px; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; font-size: 14px;" placeholder="Search term" />
+  <button id="searchButton" style="background-color: #444; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">Search</button>
+  <label for="startDate">From:</label>
+  <input type="date" id="startDate" />
+  <label for="endDate">To:</label>
+  <input type="date" id="endDate" />
+  <button id="fetchRange" style="background-color: #1c3f93; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: background-color 0.3s ease;">🔎 Fetch Range</button>
+</div>
+
+<div class="tab-buttons">
+  <button data-tab="unreviewed">📥 Unreviewed</button>
+  <button data-tab="reviewed">✅ Reviewed</button>
+  <button data-tab="manual">🛠 Manual Review</button>
+  <button data-tab="balance">💰 Balance Due</button>
+  <button data-tab="corrected">📝 Corrected Invoices</button>
+</div>
+<div id="unreviewed" class="tab-section"></div>
+<div id="reviewed" class="tab-section"></div>
+<div id="manual" class="tab-section"></div>
+<div id="balance" class="tab-section"></div>
+<div id="corrected" class="tab-section"></div>
+
+<script>
+  const fieldMapping = {
+    File_Name: "File Name", Created_Date: "Created Date",Delivered_Date: "Delivered Date",Pro_Number: "Pro Number", Qty_Ship_g_Pcs:"Qty Ship'g Pcs",BOL_Number: "BOL/Ship No",Description : "Description",
+    Consignee_Name: "Consignee Name",
+    Consignee_City: "Consignee City", Consignee_State: "Consignee State", Consignee_Zip: "Consignee Zip",
+
+    Shipper_Name: "Shipper Name", Shipper_City: "Shipper City", Shipper_State: "Shipper State", Shipper_Zip: "Shipper Zip",
+     Weight: "Weight",
+     Class: "Class",
+    Base_Rate: "Base Rate", 
+    Freight_Charge: "Freight Charge", 
+    Discount_Amount: "Discount Amount",
+    Subtotal: "Subtotal", 
+    Accessorials: "Accessorials",
+    Fuel_Surcharge: "Fuel Surcharge",
+    
+    Order_No_PO: "Order/PO",     PDF_Link: "PDF Link"
+  };
+
+  function buildTable(record) {
+    let rows = '';
+    const qty = record["Qty_Ship_g_Pcs"] || '';
+    const product = record["Product"] || '';
+    let insertedCustomRow = false;
+
+    for (let key in fieldMapping) {
+      if (key === "Qty_Ship_g_Pcs" || key === "Product") continue;
+
+      let label = fieldMapping[key];
+      let val = record[key] || '';
+      if ((key === "PDF_Link" || key === "Url") && val.url) {
+        val = `<a href="${val.url}" target="_blank">Open PDF</a>`;
+      }
+      const raw = typeof record[key] === 'object' ? record[key].url : record[key];
+
+      // After Pro_Number row, insert the custom 4-cell row
+      if (key === "Pro_Number") {
+        rows += `<tr><th class="copyable" data-copy="${label}">${label}<span class="tooltip">Copied!</span></th><td class="copyable" data-copy="${raw || ''}">${val}<span class="tooltip">Copied!</span></td></tr>`;
+        rows += `<tr>
+          <th class="copyable" style="color:#888;" data-copy="Qty Ship'g Pcs">Qty Ship'g Pcs<span class="tooltip">Copied!</span></th>
+          <td class="copyable" data-copy="${qty}">${qty}<span class="tooltip">Copied!</span></td>
+        </tr>
+        <tr>
+          <th class="copyable" style="color:#888;" data-copy="${product}">-<span class="tooltip">Copied!</span></th>
+          <td class="copyable" data-copy="${product}">${product}<span class="tooltip">Copied!</span></td>
+        </tr>`;
+        insertedCustomRow = true;
+        continue;
+      }
+
+      rows += `<tr><th class="copyable" data-copy="${label}">${label}<span class="tooltip">Copied!</span></th><td class="copyable" data-copy="${raw || ''}">${val}<span class="tooltip">Copied!</span></td></tr>`;
+    }
+
+    if (Array.isArray(record.Accessorials_Line_Items) && record.Accessorials_Line_Items.length > 0) {
+      let subRows = `<tr><th>Accessorial LineItems</th><td><div class='access-table'><table style='width:95%; margin: 5px 0; border: 1px solid #ccc;'>`;
+      subRows += `<tr><th>Item</th><th>Charges</th></tr>`;
+      record.Accessorials_Line_Items.forEach(line => {
+        const item = line.Item || '';
+        const charge = line.Charges || '';
+        subRows += `<tr>
+          <td class="copyable" data-copy="${item}">${item}<span class="tooltip">Copied!</span></td>
+          <td class="copyable" data-copy="${charge}">${charge}<span class="tooltip">Copied!</span></td>
+        </tr>`;
+      });
+      subRows += `</table></div></td></tr>`;
+      rows += subRows;
+    }
+
+    return `<table>${rows}</table>`;
+  }
+
+  function setupCopyEvents() {
+    document.querySelectorAll('.copyable').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const txt = cell.getAttribute('data-copy');
+        navigator.clipboard.writeText(txt).then(() => {
+          cell.classList.add('copied');
+          const tip = cell.querySelector('.tooltip');
+          tip.style.display = 'inline';
+          setTimeout(() => {
+            cell.classList.remove('copied');
+            tip.style.display = 'none';
+          }, 0);
+        });
+      });
+    });
+  }
+
+  function render(records) {
+    // Group by: tab → Shipper State → Shipper City → Shipper Name → records
+    const sections = { unreviewed: {}, reviewed: {}, manual: {}, balance: {}, corrected: {} };
+    const tabCounts = { unreviewed: 0, reviewed: 0, manual: 0, balance: 0, corrected: 0 };
+
+    // Assign records to tabs with "corrected" taking priority
+    records.forEach((record, i) => {
+      let tabClass = '';
+      if (record.Corrected === "true") {
+        tabClass = 'corrected';
+      } else if (record.Manual_Review_Needed === "true") {
+        tabClass = 'manual';
+      } else if (record.Balance_Due === "true") {
+        tabClass = 'balance';
+      } else if (record.Reviewed === "true") {
+        tabClass = 'reviewed';
+      } else if (record.Reviewed === "false") {
+        tabClass = 'unreviewed';
+      }
+
+      if (!tabClass) return; // skip if not matching any tab
+
+      tabCounts[tabClass]++;
+
+      const state = record.Shipper_State || "Unknown State";
+      const city = record.Shipper_City || "Unknown City";
+      const shipper = record.Shipper_Name || "Unknown Shipper";
+
+      if (!sections[tabClass][state]) sections[tabClass][state] = {};
+      if (!sections[tabClass][state][city]) sections[tabClass][state][city] = {};
+      if (!sections[tabClass][state][city][shipper]) sections[tabClass][state][city][shipper] = [];
+
+      const html = `<div class="record ${tabClass}">
+        <div class="header">${i + 1}. 📄 ${record.Pro_Number || 'No Pro Number'}${tabClass === 'unreviewed' ? `<input type="checkbox" class="mark-reviewed" data-id="${record.ID}" style="float: right; margin-top: 2px;">` : ''}</div>
+        <div class="content">${buildTable(record)}</div>
+      </div>`;
+
+      sections[tabClass][state][city][shipper].push(html);
+    });
+
+    // Update tab button counts
+    const tabNames = {
+      unreviewed: "📥 Unreviewed",
+      reviewed: "✅ Reviewed",
+      manual: "🛠 Manual Review",
+      balance: "💰 Balance Due",
+      corrected: "📝 Corrected Invoices"
+    };
+    document.querySelectorAll(".tab-buttons button").forEach(btn => {
+      const tab = btn.dataset.tab;
+      if (tabCounts[tab] !== undefined) {
+        btn.textContent = `${tabNames[tab]} (${tabCounts[tab]})`;
+      }
+    });
+
+    for (let tab in sections) {
+      const container = document.getElementById(tab);
+      let finalHTML = '';
+      const stateGroups = sections[tab];
+
+      // Sort states
+      const sortedStates = Object.keys(stateGroups).sort();
+      for (let state of sortedStates) {
+        let stateHTML = '';
+        const cityGroups = stateGroups[state];
+
+        // Sort cities
+        const sortedCities = Object.keys(cityGroups).sort();
+        for (let city of sortedCities) {
+          let cityHTML = '';
+          const shipperGroups = cityGroups[city];
+
+          // Sort shippers
+          const sortedShippers = Object.keys(shipperGroups).sort();
+          for (let shipper of sortedShippers) {
+            const shipperRecordsHTML = shipperGroups[shipper].join("");
+            cityHTML += `
+              <div class="shipper-section shipper-inner-section">
+                <div class="shipper-header shipper-inner-header">${shipper} ▼</div>
+                <div class="shipper-content shipper-inner-content" style="display: none;">${shipperRecordsHTML}</div>
+              </div>`;
+          }
+
+          stateHTML += `
+            <div class="shipper-city-block">
+              <div class="city-label">🏙️ ${city}</div>
+              ${cityHTML}
+            </div>`;
+        }
+
+        finalHTML += `<div class="shipper-section state-section">
+          <div class="shipper-header state-header">${state} ▼</div>
+          <div class="shipper-content state-content" style="display: none;">${stateHTML}</div>
+        </div>`;
+      }
+
+      container.innerHTML = finalHTML || '<p>No entries</p>';
+    }
+
+    setTimeout(() => {
+      setupCopyEvents();
+      setupReviewCheckboxes();
+      setupCollapseToggles();
+    }, 0);
+  }
+
+function setupReviewCheckboxes() {
+  document.querySelectorAll('.mark-reviewed').forEach(box => {
+    box.addEventListener('change', async function () {
+      if (this.checked) {
+        const id = this.getAttribute('data-id');
+        const checkbox = this;
+        const recordDiv = checkbox.closest('.record');
+        const header = recordDiv.querySelector('.header');
+        // Show loading state
+        checkbox.disabled = true;
+        header.style.opacity = 0.6;
+        header.innerHTML += ' <span class="loading-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top:2px solid #1c3f93;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-left:6px;"></span>';
+        // Spinner animation
+        if (!document.getElementById('spinner-style')) {
+          const style = document.createElement('style');
+          style.id = 'spinner-style';
+          style.innerHTML = '@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}';
+          document.head.appendChild(style);
+        }
+        try {
+          const apiUrl = `https://0r76uylef3.execute-api.us-east-2.amazonaws.com/default/XPO_final_Data_Update?field=Reviewed&value=true&record_id=${encodeURIComponent(id)}`;
+          const res = await fetch(apiUrl, { method: 'POST' });
+          const json = await res.json();
+          if (json.code === 3000) {
+            // Success: visually mark as reviewed, fade out, or move to reviewed tab
+            header.innerHTML = header.textContent.replace('✅ Updated', '') + ' ✅ Updated';
+            recordDiv.style.transition = 'opacity 0.5s';
+            recordDiv.style.opacity = 0.4;
+            setTimeout(() => {
+              // Optionally, remove or hide the record, or trigger a re-fetch
+              recordDiv.style.display = 'none';
+              // Optionally, trigger a re-fetch or move to reviewed tab for seamless UX
+            }, 800);
+          } else {
+            throw new Error(json.message || 'Unknown error');
+          }
+        } catch (err) {
+          // Failure: revert checkbox, show error
+          checkbox.checked = false;
+          checkbox.disabled = false;
+          header.style.opacity = 1;
+          header.innerHTML = header.textContent.replace('✅ Updated', '') + ' <span style="color:red;font-size:12px;">❌ Update failed</span>';
+          setTimeout(() => {
+            header.innerHTML = header.textContent.replace('❌ Update failed', '');
+          }, 2000);
+          console.warn("❌ Failed to update record:", err);
+        } finally {
+          // Remove spinner
+          const spinner = header.querySelector('.loading-spinner');
+          if (spinner) spinner.remove();
+        }
+      }
+    });
+  });
+}
+
+function setupCollapseToggles() {
+  // For state-level collapse
+  document.querySelectorAll('.state-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const content = header.nextElementSibling;
+      const visible = content.style.display === 'block';
+      content.style.display = visible ? 'none' : 'block';
+      header.innerHTML = header.textContent.replace(visible ? '▲' : '▼', visible ? '▼' : '▲');
+    });
+  });
+
+  // For city-level collapse (city-label is not a header, so keep as always open)
+
+  // For shipper-level collapse
+  document.querySelectorAll('.shipper-inner-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const content = header.nextElementSibling;
+      const visible = content.style.display === 'block';
+      content.style.display = visible ? 'none' : 'block';
+      header.innerHTML = header.textContent.replace(visible ? '▲' : '▼', visible ? '▼' : '▲');
+    });
+  });
+
+  // For record collapse
+  document.querySelectorAll('.header').forEach(hdr => {
+    hdr.onclick = () => {
+      const content = hdr.nextElementSibling;
+      content.style.display = content.style.display === 'block' ? 'none' : 'block';
+    };
+  });
+}
+
+
+  function toZohoDate(dateStr) {
+    const [yyyy, mm, dd] = dateStr.split("-");
+    const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${dd}-${m[parseInt(mm) - 1]}-${yyyy}`;
+  }
+
+  function fetchData(startDateStr, endDateStr) {
+  const start = toZohoDate(startDateStr);
+  const end = toZohoDate(endDateStr);
+  const url = `https://ew0nbf06x1.execute-api.us-east-2.amazonaws.com/XPO_final_Data_fetch?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}`;
+  
+  console.log("📤 Fetching via REST:", url);
+  fetch(url, {
+    method: 'POST'
+  })
+    .then(res => res.json())
+    .then(json => {
+      const data = json.data || json.records || [];
+      render(data);
+    })
+    .catch(err => {
+      console.warn("❌ REST fetch failed", err);
+      render([]);
+    });
+}
+
+
+function populateFieldDropdown() {
+  const fieldSelect = document.getElementById("fieldSelect");
+  for (let key in fieldMapping) {
+    if (key !== "Created_Date") {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = fieldMapping[key];
+      fieldSelect.appendChild(opt);
+    }
+  }
+}
+
+function fetchByField(field, value) {
+  const url = `https://ew0nbf06x1.execute-api.us-east-2.amazonaws.com/XPO_final_Data_fetch?${encodeURIComponent(field)}=${encodeURIComponent(value)}`;
+  
+  console.log("📤 Fetching by field via REST:", url);
+  fetch(url)
+    .then(res => res.json())
+    .then(json => {
+      const data = json.data || json.records || [];
+      render(data);
+    })
+    .catch(err => {
+      console.warn("❌ REST field fetch failed", err);
+      render([]);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("fetchRange").addEventListener("click", () => {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  if (start && end) fetchData(start, end);
+});
+
+  document.getElementById("searchButton").addEventListener("click", () => {
+    const field = document.getElementById("fieldSelect").value;
+    const value = document.getElementById("searchValue").value.trim();
+    if (field && value) fetchByField(field, value);
+  });
+
+  populateFieldDropdown();
+    document.querySelectorAll(".tab-buttons button").forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab-buttons button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-section").forEach(s => s.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      };
+    });
+    const today = new Date().toISOString().split("T")[0];
+document.getElementById("startDate").value = today;
+document.getElementById("endDate").value = today;
+if (window.ZOHO && ZOHO.embeddedApp && typeof ZOHO.embeddedApp.init === 'function') {
+    ZOHO.embeddedApp.init();
+}
+fetchData(today, today);
+    document.querySelector(".tab-buttons button").click();
+  });
+</script>
+</body>
+</html>
